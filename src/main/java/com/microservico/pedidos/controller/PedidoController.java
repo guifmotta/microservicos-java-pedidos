@@ -6,6 +6,7 @@ import com.microservico.pedidos.service.PedidoService;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.util.UriComponentsBuilder;
@@ -18,44 +19,52 @@ import java.util.UUID;
 @RequestMapping("/pedidos")
 public class PedidoController {
 
-        @Autowired
-        private PedidoService service;
+    @Autowired
+    private PedidoService service;
 
-        @GetMapping()
-        public List<PedidoDto> listarTodos() {
-            return service.obterTodos();
-        }
+    @GetMapping()
+    public List<PedidoDto> listarTodos() {
+        return service.obterTodos();
+    }
 
-        @GetMapping("/{id}")
-        public ResponseEntity<PedidoDto> listarPorId(@PathVariable @NotNull UUID id) {
-            PedidoDto dto = service.obterPorId(id);
+    @GetMapping("/{id}")
+    public ResponseEntity<PedidoDto> listarPorId(@PathVariable @NotNull UUID id) {
+        PedidoDto dto = service.obterPorId(id);
 
-            return  ResponseEntity.ok(dto);
-        }
+        return ResponseEntity.ok(dto);
+    }
 
-        @PostMapping()
-        public ResponseEntity<PedidoDto> realizaPedido(@RequestBody @Valid PedidoDto dto, UriComponentsBuilder uriBuilder) {
-            PedidoDto pedidoRealizado = service.criarPedido(dto);
+    /**
+     * Requisição que retorna a porta apenas para verificarmos se o load balancing está funcionando
+     */
+    @GetMapping("/porta")
+    public String verificarPorta(@Value("${local.server.port}") String porta) {
+        return String.format("Requisição respondida pela instancia executando na porta %s", porta);
+    }
 
-            URI endereco = uriBuilder.path("/pedidos/{id}").buildAndExpand(pedidoRealizado.getId()).toUri();
+    @PostMapping()
+    public ResponseEntity<PedidoDto> realizaPedido(@RequestBody @Valid PedidoDto dto, UriComponentsBuilder uriBuilder) {
+        PedidoDto pedidoRealizado = service.criarPedido(dto);
 
-            return ResponseEntity.created(endereco).body(pedidoRealizado);
+        URI endereco = uriBuilder.path("/pedidos/{id}").buildAndExpand(pedidoRealizado.getId()).toUri();
 
-        }
+        return ResponseEntity.created(endereco).body(pedidoRealizado);
 
-        @PutMapping("/{id}/status")
-        public ResponseEntity<PedidoDto> atualizaStatus(@PathVariable UUID id, @RequestBody StatusDto status){
-           PedidoDto dto = service.atualizaStatus(id, status);
+    }
 
-            return ResponseEntity.ok(dto);
-        }
+    @PutMapping("/{id}/status")
+    public ResponseEntity<PedidoDto> atualizaStatus(@PathVariable UUID id, @RequestBody StatusDto status) {
+        PedidoDto dto = service.atualizaStatus(id, status);
+
+        return ResponseEntity.ok(dto);
+    }
 
 
-        @PutMapping("/{id}/pago")
-        public ResponseEntity<Void> aprovaPagamento(@PathVariable @NotNull UUID id) {
-            service.aprovaPagamentoPedido(id);
+    @PutMapping("/{id}/pago")
+    public ResponseEntity<Void> aprovaPagamento(@PathVariable @NotNull UUID id) {
+        service.aprovaPagamentoPedido(id);
 
-            return ResponseEntity.ok().build();
+        return ResponseEntity.ok().build();
 
-        }
+    }
 }
